@@ -1,9 +1,11 @@
 package timescaledb
 
 import (
-	"database/sql"
+	"context"
 	"datastore/datastore"
 	"fmt"
+	"github.com/jackc/pgx/v4/pgxpool"
+
 	_ "github.com/lib/pq"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"math"
@@ -13,15 +15,16 @@ import (
 // open-ended range [fromTime, toTime>.
 // Returns nil upon success, otherwise error.
 func retrieveObsForTS(
-	db *sql.DB, tsID int64, fromTime, toTime *timestamppb.Timestamp, obs *[]*datastore.Observation) error {
+	db *pgxpool.Pool, tsID int64, fromTime, toTime *timestamppb.Timestamp, obs *[]*datastore.Observation) error {
 
-	rows, err := db.Query(`
-		SELECT EXTRACT(EPOCH FROM tstamp), value, field1, field2 FROM observations
+	rows, err := db.Query(
+		context.Background(),
+		`SELECT EXTRACT(EPOCH FROM tstamp), value, field1, field2 FROM observations
 		WHERE ts_id = $1
 		AND tstamp >= to_timestamp($2)
 		AND tstamp <  to_timestamp($3)
-		ORDER BY tstamp ASC
-	`, tsID, float64(fromTime.Seconds)+float64(fromTime.Nanos)/1e9, float64(toTime.Seconds)+float64(toTime.Nanos)/1e9)
+		ORDER BY tstamp ASC`,
+		tsID, float64(fromTime.Seconds)+float64(fromTime.Nanos)/1e9, float64(toTime.Seconds)+float64(toTime.Nanos)/1e9)
 	if err != nil {
 		return fmt.Errorf("db.Query() failed: %v", err)
 	}
@@ -44,6 +47,9 @@ func retrieveObsForTS(
 			},
 		})
 	}
+	// TODO: When inserting many timeseries check if the closing is necessary or if the implicit close is enough.
+	//       (Implicit close happens when iterating over every row).
+	defer rows.Close()
 
 	return nil
 }
