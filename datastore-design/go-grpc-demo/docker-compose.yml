@@ -46,18 +46,18 @@ services:
       timescale:
         condition: service_healthy
 
-  client:
-    build:
-      context: ./
-      dockerfile: examples/clients/python/Dockerfile.client
-    environment:
-      - DSHOST=main
-      - DSPORT=50050
-    networks:
-      datastore-network:
-    depends_on:
-      main:
-        condition: service_healthy
+#  client:
+#    build:
+#      context: ./
+#      dockerfile: examples/clients/python/Dockerfile.client
+#    environment:
+#      - DSHOST=main
+#      - DSPORT=50050
+#    networks:
+#      datastore-network:
+#    depends_on:
+#      main:
+#        condition: service_healthy
 
 volumes:
   ts-data:

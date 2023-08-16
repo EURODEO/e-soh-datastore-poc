@@ -1,5 +1,6 @@
 # Code editors
 .idea/
+.run/
 
 # Python
 __pycache__/

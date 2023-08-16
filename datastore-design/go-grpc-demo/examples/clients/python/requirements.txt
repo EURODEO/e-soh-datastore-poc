@@ -4,12 +4,62 @@
 #
 #    pip-compile --no-emit-index-url
 #
-grpcio==1.56.2
-    # via grpcio-tools
-grpcio-tools==1.56.2
+certifi==2023.7.22
+    # via netcdf4
+cftime==1.6.2
+    # via netcdf4
+click==8.1.6
+    # via dask
+cloudpickle==2.2.1
+    # via dask
+dask==2023.8.0
     # via -r requirements.in
+fsspec==2023.6.0
+    # via dask
+grpcio==1.57.0
+    # via grpcio-tools
+grpcio-tools==1.57.0
+    # via -r requirements.in
+importlib-metadata==6.8.0
+    # via dask
+locket==1.0.0
+    # via partd
+netcdf4==1.6.4
+    # via -r requirements.in
+numpy==1.25.2
+    # via
+    #   cftime
+    #   netcdf4
+    #   pandas
+    #   xarray
+packaging==23.1
+    # via
+    #   dask
+    #   xarray
+pandas==2.0.3
+    # via xarray
+partd==1.4.0
+    # via dask
 protobuf==4.24.0
     # via grpcio-tools
+python-dateutil==2.8.2
+    # via pandas
+pytz==2023.3
+    # via pandas
+pyyaml==6.0.1
+    # via dask
+six==1.16.0
+    # via python-dateutil
+toolz==0.12.0
+    # via
+    #   dask
+    #   partd
+tzdata==2023.3
+    # via pandas
+xarray==2023.7.0
+    # via -r requirements.in
+zipp==3.16.2
+    # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
