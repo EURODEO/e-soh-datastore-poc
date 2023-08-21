@@ -14,12 +14,18 @@ if __name__ == "__main__":
     total_time_start = perf_counter()
     data_paths = Path(Path(__file__).parents[5], "test-data", "KNMI").resolve().glob("*.nc")
 
+    add_ts_request_messages = []
+    put_observations_messages = []
+
     # TODO: The coords are not the same for every timeseries. There are 4 out of the 432 observations that have a
     #   different lat, lon and height. For the test data we use the first row. In the future we should look at
     #   iterating over the coords and if the 4 outliers are valid. This outliers can be found with:
     #   [np.array_equal(file["lat"].values[0], lats, equal_nan=True) for lats in file["lat"].values[1:]]
     with grpc.insecure_channel(f"{os.getenv('DSHOST', 'localhost')}:{os.getenv('DSPORT', '50050')}") as channel:
         client = dstore_grpc.DatastoreStub(channel=channel)
+
+        print("Collecting all the data...")
+        collect_time_start = perf_counter()
 
         # TODO: How to deal with IDs. At the moment, I set them manually, but if the database or server could handle it,
         #   it would help when going for parallel processing when inserting. Do we want to use a UUID?
@@ -49,7 +55,7 @@ if __name__ == "__main__":
                         metadata=tsMData,
                     )
 
-                    client.AddTimeSeries(request)
+                    add_ts_request_messages.append(request)
 
                     station_slice = param_file.sel(station=station_id)
                     # TODO check if timestamp is correctly inserted
@@ -70,11 +76,21 @@ if __name__ == "__main__":
                     ts_observations.append(dstore.TSObservations(tsid=ts_id, obs=observations))
                     ts_id += 1
 
-                print(f"Bulk inserting {len(ts_observations)} TSObservations.")
                 request = dstore.PutObsRequest(tsobs=ts_observations)
-                bulk_obs_insert_start = perf_counter()
-                client.PutObservations(
-                    request=request,
-                )
-                print(f"Finished bulk insert {perf_counter() - bulk_obs_insert_start}.")
-    print(f"Finished, total time elapsed: {perf_counter() - total_time_start}")
+                put_observations_messages.append(request)
+
+        print(f"Collected all data in {perf_counter() - collect_time_start} s")
+
+        print("Add all the timeseries...")
+        add_time_start = perf_counter()
+        for request in add_ts_request_messages:
+            client.AddTimeSeries(request)
+        print(f"Added all time series in {perf_counter() - add_time_start} s")
+
+        print("Insert all the data...")
+        insert_time_start = perf_counter()
+        for request in put_observations_messages:
+            client.PutObservations(request)
+        print(f"Inseted all data in {perf_counter() - insert_time_start} s")
+
+    print(f"Finished, total time elapsed: {perf_counter() - total_time_start} s")
