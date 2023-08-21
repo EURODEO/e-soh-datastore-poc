@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # tested with Python 3.11
+import concurrent
 import os
 from pathlib import Path
 from time import perf_counter
@@ -83,14 +84,18 @@ if __name__ == "__main__":
 
         print("Add all the timeseries...")
         add_time_start = perf_counter()
-        for request in add_ts_request_messages:
-            client.AddTimeSeries(request)
+        # for request in add_ts_request_messages:
+        #     client.AddTimeSeries(request)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            results = list(executor.map(client.AddTimeSeries, add_ts_request_messages))
         print(f"Added all time series in {perf_counter() - add_time_start} s")
 
         print("Insert all the data...")
         insert_time_start = perf_counter()
-        for request in put_observations_messages:
-            client.PutObservations(request)
-        print(f"Inseted all data in {perf_counter() - insert_time_start} s")
+        # for request in put_observations_messages:
+        #     client.PutObservations(request)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            results = list(executor.map(client.PutObservations, put_observations_messages))
+        print(f"Inserted all data in {perf_counter() - insert_time_start} s")
 
     print(f"Finished, total time elapsed: {perf_counter() - total_time_start} s")

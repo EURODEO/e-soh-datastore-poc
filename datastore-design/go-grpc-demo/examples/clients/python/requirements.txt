@@ -8,11 +8,11 @@ certifi==2023.7.22
     # via netcdf4
 cftime==1.6.2
     # via netcdf4
-click==8.1.6
+click==8.1.7
     # via dask
 cloudpickle==2.2.1
     # via dask
-dask==2023.8.0
+dask==2023.8.1
     # via -r requirements.in
 fsspec==2023.6.0
     # via dask
@@ -40,7 +40,7 @@ pandas==2.0.3
     # via xarray
 partd==1.4.0
     # via dask
-protobuf==4.24.0
+protobuf==4.24.1
     # via grpcio-tools
 python-dateutil==2.8.2
     # via pandas
@@ -56,7 +56,7 @@ toolz==0.12.0
     #   partd
 tzdata==2023.3
     # via pandas
-xarray==2023.7.0
+xarray==2023.8.0
     # via -r requirements.in
 zipp==3.16.2
     # via importlib-metadata
