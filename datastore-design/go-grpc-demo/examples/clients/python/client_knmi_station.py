@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 # tested with Python 3.11
+import concurrent
 import os
+from multiprocessing import cpu_count
 from pathlib import Path
 from time import perf_counter
-from typing import List, Tuple
+from typing import List
+from typing import Tuple
 
 import grpc
 import xarray as xr
@@ -68,19 +71,25 @@ def netcdf_file_to_requests(file_path: Path | str) -> Tuple[List, List]:
 
 
 def insert_data(time_series_requests: List, observation_requests: List):
+    workers = int(cpu_count())
+
     with grpc.insecure_channel(f"{os.getenv('DSHOST', 'localhost')}:{os.getenv('DSPORT', '50050')}") as channel:
         client = dstore_grpc.DatastoreStub(channel=channel)
 
         print(f"Inserting {len(time_series_requests)} time series requests.")
         time_series_insert_start = perf_counter()
-        for request in time_series_requests:
-            client.AddTimeSeries(request)
+        # for request in time_series_requests:
+        #     client.AddTimeSeries(request)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+            executor.map(client.AddTimeSeries, time_series_requests)
         print(f"Finished time series insert {perf_counter() - time_series_insert_start}.")
 
         print(f"Inserting {len(observation_requests)} bulk observations requests.")
         obs_insert_start = perf_counter()
-        for request in observation_requests:
-            client.PutObservations(request=request)
+        # for request in observation_requests:
+        #     client.PutObservations(request=request)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+            executor.map(client.PutObservations, observation_requests)
         print(f"Finished observations bulk insert {perf_counter() - obs_insert_start}.")
 
 
