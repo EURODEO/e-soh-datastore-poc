@@ -12,9 +12,6 @@ import xarray as xr
 from dummy_data import param_ids
 
 if __name__ == "__main__":
-    from google.protobuf.internal import api_implementation
-    print(api_implementation.Type())
-
     total_time_start = perf_counter()
     data_paths = Path(Path(__file__).parents[5], "test-data", "KNMI").resolve().glob("*.nc")
 
