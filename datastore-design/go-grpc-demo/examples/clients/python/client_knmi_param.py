@@ -12,6 +12,9 @@ import xarray as xr
 from dummy_data import param_ids
 
 if __name__ == "__main__":
+    from google.protobuf.internal import api_implementation
+    print(api_implementation.Type())
+
     total_time_start = perf_counter()
     data_paths = Path(Path(__file__).parents[5], "test-data", "KNMI").resolve().glob("*.nc")
 
@@ -33,7 +36,7 @@ if __name__ == "__main__":
         ts_id = 1
         # with xr.open_mfdataset(paths=data_paths, combine="by_coords", engine="netcdf4", chunks=-1) as file:
         with xr.open_dataset(
-            Path(Path(__file__).parents[5], "test-data", "KNMI", "20221231.nc"), engine="netcdf4", chunks=-1
+            Path(Path(__file__).parents[5], "test-data", "KNMI", "20221231.nc"), engine="netcdf4", chunks=None  # disable dask
         ) as file:
             for param_id in param_ids:
                 ts_observations = []

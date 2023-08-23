@@ -23,7 +23,7 @@ def netcdf_file_to_requests(file_path: Path | str) -> Tuple[List, List]:
     #   it would help when going for parallel processing when inserting. Do we want to use a UUID?
     ts_id = 1
 
-    with xr.open_dataset(file_path, engine="netcdf4", chunks=-1) as file:
+    with xr.open_dataset(file_path, engine="netcdf4", chunks=None) as file:  # disable dask!
         # TODO: The coords are not the same for every timeseries. There are 4 out of the 432 observations that have a
         #   different lat, lon and height. For the test data we use the first row. In the future we should look at
         #   iterating over the coords and if the 4 outliers are valid. This outliers can be found with:
