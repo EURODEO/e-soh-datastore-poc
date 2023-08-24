@@ -3,7 +3,6 @@
 # Install using:
 # pip-sync
 
-dask~=2023.8
 grpcio-tools~=1.56
 netCDF4~=1.6
 xarray~=2023.7
