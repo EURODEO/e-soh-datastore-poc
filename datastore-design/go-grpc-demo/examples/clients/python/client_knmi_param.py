@@ -58,7 +58,7 @@ if __name__ == "__main__":
                         id=ts_id,
                         metadata=tsMData,
                     )
-                    client.AddTimeSeries(request)
+                    # client.AddTimeSeries(request)
 
                     add_ts_request_messages.append(request)
 
@@ -69,7 +69,7 @@ if __name__ == "__main__":
                         pd.to_datetime(station_slice["time"].data).to_pydatetime(), station_slice.data
                         # station_slice["time"].data.astype("datetime64[s]").astype("int64"), station_slice.data
                     ):
-                        observations = []
+                        # observations = []
                         ts = Timestamp()
                         ts.FromDatetime(time)
                         observations.append(
@@ -81,16 +81,16 @@ if __name__ == "__main__":
                                 ),
                             )
                         )
-                        obs = [dstore.TSObservations(tsid=ts_id, obs=observations)]
-                        request = dstore.PutObsRequest(tsobs=obs)
-                        print(request)
-                        client.PutObservations(request)
+                        # obs = [dstore.TSObservations(tsid=ts_id, obs=observations)]
+                        # request = dstore.PutObsRequest(tsobs=obs)
+                        # print(request)
+                        # client.PutObservations(request)
 
-                    # ts_observations.append(dstore.TSObservations(tsid=ts_id, obs=observations))
+                    ts_observations.append(dstore.TSObservations(tsid=ts_id, obs=observations))
                     ts_id += 1
 
-                # request = dstore.PutObsRequest(tsobs=ts_observations)
-                # put_observations_messages.append(request)
+                request = dstore.PutObsRequest(tsobs=ts_observations)
+                put_observations_messages.append(request)
 
         print(f"Collected all data in {perf_counter() - collect_time_start} s")
 
@@ -98,16 +98,16 @@ if __name__ == "__main__":
         add_time_start = perf_counter()
         # for request in add_ts_request_messages:
         #     client.AddTimeSeries(request)
-        # with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        #     results = list(executor.map(client.AddTimeSeries, add_ts_request_messages))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            results = list(executor.map(client.AddTimeSeries, add_ts_request_messages))
         print(f"Added all time series in {perf_counter() - add_time_start} s")
 
         print("Insert all the data...")
         insert_time_start = perf_counter()
         # for request in put_observations_messages:
         #     client.PutObservations(request)
-        # with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        #     results = list(executor.map(client.PutObservations, put_observations_messages))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            results = list(executor.map(client.PutObservations, put_observations_messages))
         print(f"Inserted all data in {perf_counter() - insert_time_start} s")
 
     print(f"Finished, total time elapsed: {perf_counter() - total_time_start} s")
