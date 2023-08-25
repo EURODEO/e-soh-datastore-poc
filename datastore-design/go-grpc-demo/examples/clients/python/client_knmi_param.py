@@ -58,18 +58,15 @@ if __name__ == "__main__":
                         id=ts_id,
                         metadata=tsMData,
                     )
-                    # client.AddTimeSeries(request)
 
                     add_ts_request_messages.append(request)
 
                     station_slice = param_file.sel(station=station_id)
-                    # TODO check if timestamp is correctly inserted
-                    # observations = []
+
+                    observations = []
                     for time, obs_value in zip(
                         pd.to_datetime(station_slice["time"].data).to_pydatetime(), station_slice.data
-                        # station_slice["time"].data.astype("datetime64[s]").astype("int64"), station_slice.data
                     ):
-                        # observations = []
                         ts = Timestamp()
                         ts.FromDatetime(time)
                         observations.append(
@@ -81,10 +78,6 @@ if __name__ == "__main__":
                                 ),
                             )
                         )
-                        # obs = [dstore.TSObservations(tsid=ts_id, obs=observations)]
-                        # request = dstore.PutObsRequest(tsobs=obs)
-                        # print(request)
-                        # client.PutObservations(request)
 
                     ts_observations.append(dstore.TSObservations(tsid=ts_id, obs=observations))
                     ts_id += 1
