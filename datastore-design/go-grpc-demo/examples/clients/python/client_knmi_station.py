@@ -8,6 +8,9 @@ from time import perf_counter
 from typing import List
 from typing import Tuple
 
+import pandas as pd
+from google.protobuf.timestamp_pb2 import Timestamp
+
 import grpc
 import xarray as xr
 
@@ -47,14 +50,15 @@ def netcdf_file_to_requests(file_path: Path | str) -> Tuple[List, List]:
                 )
                 time_series_requests.append(dstore.AddTSRequest(id=ts_id, metadata=tsMData))
 
-                # TODO check if timestamp is correctly inserted
                 observations = []
                 for time, obs_value in zip(
-                        param_file["time"].data.astype("datetime64[s]").astype("int64"), param_file.data
+                        pd.to_datetime(param_file["time"].data).to_pydatetime(), param_file.data
                 ):
+                    ts = Timestamp()
+                    ts.FromDatetime(time)
                     observations.append(
                         dstore.Observation(
-                            time=time,
+                            time=ts,
                             value=obs_value,
                             metadata=dstore.ObsMetadata(
                                 field1="KNMI", field2="Royal Dutch Meteorological Institute"
