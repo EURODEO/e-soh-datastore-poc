@@ -13,7 +13,7 @@ import datastore_pb2_grpc as dstore_grpc
 import grpc
 import pandas as pd
 import xarray as xr
-from dummy_data import param_ids
+from parameters import knmi_parameter_names
 from google.protobuf.timestamp_pb2 import Timestamp
 
 
@@ -25,7 +25,7 @@ def netcdf_file_to_requests(file_path: Path | str) -> Tuple[List, List]:
     ts_id = 1
 
     with xr.open_dataset(file_path, engine="netcdf4", chunks=None) as file:  # chunks=None to disable dask
-        for param_id in param_ids:
+        for param_id in knmi_parameter_names:
             ts_observations = []
 
             param_file = file[param_id]

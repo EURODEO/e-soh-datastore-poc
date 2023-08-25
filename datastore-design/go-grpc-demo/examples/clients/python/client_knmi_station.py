@@ -13,7 +13,7 @@ import datastore_pb2_grpc as dstore_grpc
 import grpc
 import pandas as pd
 import xarray as xr
-from dummy_data import param_ids
+from parameters import knmi_parameter_names
 from google.protobuf.timestamp_pb2 import Timestamp
 
 
@@ -35,7 +35,7 @@ def netcdf_file_to_requests(file_path: Path | str) -> Tuple[List, List]:
             ts_observations = []
             station_slice = file.sel(station=station_id)
 
-            for param_id in param_ids:
+            for param_id in knmi_parameter_names:
                 param_file = station_slice[param_id]
                 tsMData = dstore.TSMetadata(
                     station_id=station_id,
