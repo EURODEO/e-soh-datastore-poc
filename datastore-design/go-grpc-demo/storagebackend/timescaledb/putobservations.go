@@ -21,10 +21,7 @@ func createInsertVals(
 	for _, obs := range tsObs.Obs {
 		vals0 := []interface{}{
 			tsObs.Tsid,
-			//obs.Time,
 			obs.Time.AsTime(),
-			//float64(obs.Time.Seconds) + float64(obs.Time.Nanos)/1e9,
-			//ptypes.TimestampProto(obs.Time),
 			obs.Value,
 			obs.Metadata.Field1,
 			obs.Metadata.Field2,
