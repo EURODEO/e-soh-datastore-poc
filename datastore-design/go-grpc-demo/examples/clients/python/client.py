@@ -36,6 +36,8 @@ def callPutObservations(stub):
         field2='value2',
     )
     timestamp = Timestamp()
+    # TODO: Look into datetime now timestamp, the timestamps from the bulk loader look correct at the moment,
+    #  but it looks as there are issues with a more precide datetime, thus instead of minute, nano second precision.
     timestamp.FromDatetime(datetime.now())
     obs = [
         dstore.Observation(

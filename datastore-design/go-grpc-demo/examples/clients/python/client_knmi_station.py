@@ -92,7 +92,7 @@ if __name__ == "__main__":
 
     print("Starting with creating the time series and observations requests.")
     create_requests_start = perf_counter()
-    file_path = Path(Path(__file__).parents[5] / "test-data" / "KNMI" / "20221231.nc")
+    file_path = Path(Path(__file__).parents[2] / "test-data" / "KNMI" / "20221231.nc")
     time_series_request_messages, observation_request_messages = netcdf_file_to_requests(file_path=file_path)
     print(f"Finished creating the time series and observation requests {perf_counter() - create_requests_start}.")
 
