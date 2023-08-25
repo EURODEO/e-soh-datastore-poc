@@ -21,7 +21,10 @@ func createInsertVals(
 	for _, obs := range tsObs.Obs {
 		vals0 := []interface{}{
 			tsObs.Tsid,
-			float64(obs.Time.Seconds) + float64(obs.Time.Nanos)/1e9,
+			//obs.Time,
+			obs.Time.AsTime(),
+			//float64(obs.Time.Seconds) + float64(obs.Time.Nanos)/1e9,
+			//ptypes.TimestampProto(obs.Time),
 			obs.Value,
 			obs.Metadata.Field1,
 			obs.Metadata.Field2,
@@ -29,7 +32,7 @@ func createInsertVals(
 		// TODO: only add observations that are within the valid time range
 		// (typically: [now - 24h, now])
 		*valsExpr = append(
-			*valsExpr, fmt.Sprintf("($%d, to_timestamp($%d), $%d, $%d, $%d)",
+			*valsExpr, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)",
 				index+1, index+2, index+3, index+4, index+5))
 		*vals = append(*vals, vals0...)
 		index += len(vals0)
