@@ -4,6 +4,8 @@ import concurrent
 import os
 from pathlib import Path
 from time import perf_counter
+from multiprocessing import cpu_count
+from typing import Tuple, List
 
 import pandas as pd
 from google.protobuf.timestamp_pb2 import Timestamp
@@ -14,93 +16,92 @@ import grpc
 import xarray as xr
 from dummy_data import param_ids
 
-if __name__ == "__main__":
-    total_time_start = perf_counter()
-    data_paths = Path(Path(__file__).parents[5], "test-data", "KNMI").resolve().glob("*.nc")
+def netcdf_file_to_requests(file_path: Path | str) -> Tuple[List, List]:
+    time_series_request_messages = []
+    observation_request_messages = []
+    # TODO: How to deal with IDs. At the moment, I set them manually, but if the database or server could handle it,
+    #   it would help when going for parallel processing when inserting. Do we want to use a UUID?
+    ts_id = 1
 
-    add_ts_request_messages = []
-    put_observations_messages = []
+    with xr.open_dataset(file_path, engine="netcdf4", chunks=None) as file:  # chunks=None to disable dask
+        for param_id in param_ids:
+            ts_observations = []
 
-    # TODO: The coords are not the same for every timeseries. There are 4 out of the 432 observations that have a
-    #   different lat, lon and height. For the test data we use the first row. In the future we should look at
-    #   iterating over the coords and if the 4 outliers are valid. This outliers can be found with:
-    #   [np.array_equal(file["lat"].values[0], lats, equal_nan=True) for lats in file["lat"].values[1:]]
+            param_file = file[param_id]
+            for station_id, latitude, longitude, height in zip(
+                    file["station"].values, file["lat"].values[0], file["lon"].values[0], file["height"].values[0]
+            ):
+                tsMData = dstore.TSMetadata(
+                    station_id=station_id,
+                    param_id=param_id,
+                    lat=latitude,
+                    lon=longitude,
+                    other1=param_file.name,
+                    other2=param_file.long_name,
+                    other3="value3",
+                )
+                request = dstore.AddTSRequest(
+                    id=ts_id,
+                    metadata=tsMData,
+                )
+
+                time_series_request_messages.append(request)
+
+                station_slice = param_file.sel(station=station_id)
+
+                observations = []
+                for time, obs_value in zip(
+                        pd.to_datetime(station_slice["time"].data).to_pydatetime(), station_slice.data
+                ):
+                    ts = Timestamp()
+                    ts.FromDatetime(time)
+                    observations.append(
+                        dstore.Observation(
+                            time=ts,
+                            value=obs_value,
+                            metadata=dstore.ObsMetadata(
+                                field1="KNMI", field2="Royal Dutch Meteorological Institute"
+                            ),
+                        )
+                    )
+
+                ts_observations.append(dstore.TSObservations(tsid=ts_id, obs=observations))
+                ts_id += 1
+
+            request = dstore.PutObsRequest(tsobs=ts_observations)
+            observation_request_messages.append(request)
+
+    return time_series_request_messages, observation_request_messages
+
+
+def insert_data(time_series_request_messages: List, observation_request_messages: List):
+    workers = int(cpu_count())
+
     with grpc.insecure_channel(f"{os.getenv('DSHOST', 'localhost')}:{os.getenv('DSPORT', '50050')}") as channel:
         client = dstore_grpc.DatastoreStub(channel=channel)
 
-        print("Collecting all the data...")
-        collect_time_start = perf_counter()
+        print(f"Inserting {len(time_series_request_messages)} time series requests.")
+        time_series_insert_start = perf_counter()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+            executor.map(client.AddTimeSeries, time_series_request_messages)
+        print(f"Finished time series insert {perf_counter() - time_series_insert_start}.")
 
-        # TODO: How to deal with IDs. At the moment, I set them manually, but if the database or server could handle it,
-        #   it would help when going for parallel processing when inserting. Do we want to use a UUID?
-        ts_id = 1
-        # with xr.open_mfdataset(paths=data_paths, combine="by_coords", engine="netcdf4", chunks=-1) as file:
-        with xr.open_dataset(
-            Path(Path(__file__).parents[5], "test-data", "KNMI", "20221231.nc"), engine="netcdf4", chunks=None  # disable dask
-        ) as file:
-            for param_id in param_ids:
-                ts_observations = []
+        print(f"Inserting {len(observation_request_messages)} bulk observations requests.")
+        obs_insert_start = perf_counter()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+            executor.map(client.PutObservations, observation_request_messages)
+        print(f"Finished observations bulk insert {perf_counter() - obs_insert_start}.")
 
-                param_file = file[param_id]
-                for station_id, latitude, longitude, height in zip(
-                    file["station"].values, file["lat"].values[0], file["lon"].values[0], file["height"].values[0]
-                ):
-                    tsMData = dstore.TSMetadata(
-                        station_id=station_id,
-                        param_id=param_id,
-                        lat=latitude,
-                        lon=longitude,
-                        other1=param_file.name,
-                        other2=param_file.long_name,
-                        other3="value3",
-                    )
-                    request = dstore.AddTSRequest(
-                        id=ts_id,
-                        metadata=tsMData,
-                    )
 
-                    add_ts_request_messages.append(request)
+if __name__ == "__main__":
+    total_time_start = perf_counter()
 
-                    station_slice = param_file.sel(station=station_id)
+    print(f"Starting with creating the time series and observations requests.")
+    create_requests_start = perf_counter()
+    file_path = Path(Path(__file__).parents[5] / "test-data" / "KNMI" / "20221231.nc")
+    time_series_request_messages, observation_request_messages = netcdf_file_to_requests(file_path=file_path)
+    print(f"Finished creating the time series and observation requests {perf_counter() - create_requests_start}.")
 
-                    observations = []
-                    for time, obs_value in zip(
-                        pd.to_datetime(station_slice["time"].data).to_pydatetime(), station_slice.data
-                    ):
-                        ts = Timestamp()
-                        ts.FromDatetime(time)
-                        observations.append(
-                            dstore.Observation(
-                                time=ts,
-                                value=obs_value,
-                                metadata=dstore.ObsMetadata(
-                                    field1="KNMI", field2="Royal Dutch Meteorological Institute"
-                                ),
-                            )
-                        )
+    insert_data(time_series_request_messages=time_series_request_messages, observation_request_messages=observation_request_messages)
 
-                    ts_observations.append(dstore.TSObservations(tsid=ts_id, obs=observations))
-                    ts_id += 1
-
-                request = dstore.PutObsRequest(tsobs=ts_observations)
-                put_observations_messages.append(request)
-
-        print(f"Collected all data in {perf_counter() - collect_time_start} s")
-
-        print("Add all the timeseries...")
-        add_time_start = perf_counter()
-        # for request in add_ts_request_messages:
-        #     client.AddTimeSeries(request)
-        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-            results = list(executor.map(client.AddTimeSeries, add_ts_request_messages))
-        print(f"Added all time series in {perf_counter() - add_time_start} s")
-
-        print("Insert all the data...")
-        insert_time_start = perf_counter()
-        # for request in put_observations_messages:
-        #     client.PutObservations(request)
-        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-            results = list(executor.map(client.PutObservations, put_observations_messages))
-        print(f"Inserted all data in {perf_counter() - insert_time_start} s")
-
-    print(f"Finished, total time elapsed: {perf_counter() - total_time_start} s")
+    print(f"Finished, total time elapsed: {perf_counter() - total_time_start}")

@@ -20,13 +20,13 @@ from dummy_data import param_ids
 
 
 def netcdf_file_to_requests(file_path: Path | str) -> Tuple[List, List]:
-    time_series_requests = []
-    observation_requests = []
+    time_series_request_messages = []
+    observation_request_messages = []
     # TODO: How to deal with IDs. At the moment, I set them manually, but if the database or server could handle it,
     #   it would help when going for parallel processing when inserting. Do we want to use a UUID?
     ts_id = 1
 
-    with xr.open_dataset(file_path, engine="netcdf4", chunks=None) as file:  # disable dask!
+    with xr.open_dataset(file_path, engine="netcdf4", chunks=None) as file:  # chunks=None to disable dask
         # TODO: The coords are not the same for every timeseries. There are 4 out of the 432 observations that have a
         #   different lat, lon and height. For the test data we use the first row. In the future we should look at
         #   iterating over the coords and if the 4 outliers are valid. This outliers can be found with:
@@ -48,7 +48,7 @@ def netcdf_file_to_requests(file_path: Path | str) -> Tuple[List, List]:
                     other2=param_file.long_name,
                     other3="value3",
                 )
-                time_series_requests.append(dstore.AddTSRequest(id=ts_id, metadata=tsMData))
+                time_series_request_messages.append(dstore.AddTSRequest(id=ts_id, metadata=tsMData))
 
                 observations = []
                 for time, obs_value in zip(
@@ -69,31 +69,27 @@ def netcdf_file_to_requests(file_path: Path | str) -> Tuple[List, List]:
                 ts_observations.append(dstore.TSObservations(tsid=ts_id, obs=observations))
                 ts_id += 1
 
-            observation_requests.append(dstore.PutObsRequest(tsobs=ts_observations))
+            observation_request_messages.append(dstore.PutObsRequest(tsobs=ts_observations))
 
-    return time_series_requests, observation_requests
+    return time_series_request_messages, observation_request_messages
 
 
-def insert_data(time_series_requests: List, observation_requests: List):
+def insert_data(time_series_request_messages: List, observation_request_messages: List):
     workers = int(cpu_count())
 
     with grpc.insecure_channel(f"{os.getenv('DSHOST', 'localhost')}:{os.getenv('DSPORT', '50050')}") as channel:
         client = dstore_grpc.DatastoreStub(channel=channel)
 
-        print(f"Inserting {len(time_series_requests)} time series requests.")
+        print(f"Inserting {len(time_series_request_messages)} time series requests.")
         time_series_insert_start = perf_counter()
-        # for request in time_series_requests:
-        #     client.AddTimeSeries(request)
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-            executor.map(client.AddTimeSeries, time_series_requests)
+            executor.map(client.AddTimeSeries, time_series_request_messages)
         print(f"Finished time series insert {perf_counter() - time_series_insert_start}.")
 
-        print(f"Inserting {len(observation_requests)} bulk observations requests.")
+        print(f"Inserting {len(observation_request_messages)} bulk observations requests.")
         obs_insert_start = perf_counter()
-        # for request in observation_requests:
-        #     client.PutObservations(request=request)
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-            executor.map(client.PutObservations, observation_requests)
+            executor.map(client.PutObservations, observation_request_messages)
         print(f"Finished observations bulk insert {perf_counter() - obs_insert_start}.")
 
 
@@ -103,9 +99,9 @@ if __name__ == "__main__":
     print(f"Starting with creating the time series and observations requests.")
     create_requests_start = perf_counter()
     file_path = Path(Path(__file__).parents[5] / "test-data" / "KNMI" / "20221231.nc")
-    time_series_requests, observation_requests = netcdf_file_to_requests(file_path=file_path)
+    time_series_request_messages, observation_request_messages = netcdf_file_to_requests(file_path=file_path)
     print(f"Finished creating the time series and observation requests {perf_counter() - create_requests_start}.")
 
-    insert_data(time_series_requests=time_series_requests, observation_requests=observation_requests)
+    insert_data(time_series_request_messages=time_series_request_messages, observation_request_messages=observation_request_messages)
 
     print(f"Finished, total time elapsed: {perf_counter() - total_time_start}")
