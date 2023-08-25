@@ -2,19 +2,20 @@
 # tested with Python 3.11
 import concurrent
 import os
+from multiprocessing import cpu_count
 from pathlib import Path
 from time import perf_counter
-from multiprocessing import cpu_count
-from typing import Tuple, List
-
-import pandas as pd
-from google.protobuf.timestamp_pb2 import Timestamp
+from typing import List
+from typing import Tuple
 
 import datastore_pb2 as dstore
 import datastore_pb2_grpc as dstore_grpc
 import grpc
+import pandas as pd
 import xarray as xr
 from dummy_data import param_ids
+from google.protobuf.timestamp_pb2 import Timestamp
+
 
 def netcdf_file_to_requests(file_path: Path | str) -> Tuple[List, List]:
     time_series_request_messages = []
@@ -29,7 +30,7 @@ def netcdf_file_to_requests(file_path: Path | str) -> Tuple[List, List]:
 
             param_file = file[param_id]
             for station_id, latitude, longitude, height in zip(
-                    file["station"].values, file["lat"].values[0], file["lon"].values[0], file["height"].values[0]
+                file["station"].values, file["lat"].values[0], file["lon"].values[0], file["height"].values[0]
             ):
                 tsMData = dstore.TSMetadata(
                     station_id=station_id,
@@ -51,7 +52,7 @@ def netcdf_file_to_requests(file_path: Path | str) -> Tuple[List, List]:
 
                 observations = []
                 for time, obs_value in zip(
-                        pd.to_datetime(station_slice["time"].data).to_pydatetime(), station_slice.data
+                    pd.to_datetime(station_slice["time"].data).to_pydatetime(), station_slice.data
                 ):
                     ts = Timestamp()
                     ts.FromDatetime(time)
@@ -59,9 +60,7 @@ def netcdf_file_to_requests(file_path: Path | str) -> Tuple[List, List]:
                         dstore.Observation(
                             time=ts,
                             value=obs_value,
-                            metadata=dstore.ObsMetadata(
-                                field1="KNMI", field2="Royal Dutch Meteorological Institute"
-                            ),
+                            metadata=dstore.ObsMetadata(field1="KNMI", field2="Royal Dutch Meteorological Institute"),
                         )
                     )
 
@@ -96,12 +95,15 @@ def insert_data(time_series_request_messages: List, observation_request_messages
 if __name__ == "__main__":
     total_time_start = perf_counter()
 
-    print(f"Starting with creating the time series and observations requests.")
+    print("Starting with creating the time series and observations requests.")
     create_requests_start = perf_counter()
     file_path = Path(Path(__file__).parents[5] / "test-data" / "KNMI" / "20221231.nc")
     time_series_request_messages, observation_request_messages = netcdf_file_to_requests(file_path=file_path)
     print(f"Finished creating the time series and observation requests {perf_counter() - create_requests_start}.")
 
-    insert_data(time_series_request_messages=time_series_request_messages, observation_request_messages=observation_request_messages)
+    insert_data(
+        time_series_request_messages=time_series_request_messages,
+        observation_request_messages=observation_request_messages,
+    )
 
     print(f"Finished, total time elapsed: {perf_counter() - total_time_start}")
