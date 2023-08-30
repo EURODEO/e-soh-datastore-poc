@@ -1,9 +1,10 @@
 package timescaledb
 
 import (
-	"database/sql"
+	"context"
 	"datastore/datastore"
 	"fmt"
+	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/lib/pq"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"math"
@@ -13,10 +14,11 @@ import (
 // open-ended range [fromTime, toTime>.
 // Returns nil upon success, otherwise error.
 func retrieveObsForTS(
-	db *sql.DB, tsID int64, fromTime, toTime *timestamppb.Timestamp, obs *[]*datastore.Observation) error {
+	db *pgxpool.Pool, tsID int64, fromTime, toTime *timestamppb.Timestamp, obs *[]*datastore.Observation) error {
 
-	rows, err := db.Query(`
-		SELECT EXTRACT(EPOCH FROM tstamp), value, field1, field2 FROM observations
+	rows, err := db.Query(
+		context.Background(),
+		`SELECT EXTRACT(EPOCH FROM tstamp), value, field1, field2 FROM observations
 		WHERE ts_id = $1
 		AND tstamp >= to_timestamp($2)
 		AND tstamp <  to_timestamp($3)

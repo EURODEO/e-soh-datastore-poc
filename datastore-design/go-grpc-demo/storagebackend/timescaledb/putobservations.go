@@ -1,11 +1,13 @@
 package timescaledb
 
 import (
-	"database/sql"
+	"context"
 	"datastore/datastore"
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/lib/pq"
 )
 
@@ -36,12 +38,12 @@ func createInsertVals(
 
 // insertObsForTS inserts new observations and/or updates existing ones.
 // Returns nil upon success, otherwise error.
-func insertObsForTS(db *sql.DB, tsObs *datastore.TSObservations) error {
+func insertObsForTS(db *pgxpool.Pool, tsObs *datastore.TSObservations) error {
 	var err error
-	var rows *sql.Rows
+	var rows pgx.Rows
 
 	// ensure that the time series ID already exists
-	rows, err = db.Query("SELECT id FROM time_series WHERE id = $1", tsObs.Tsid)
+	rows, err = db.Query(context.Background(), "SELECT id FROM time_series WHERE id = $1", tsObs.Tsid)
 	if err != nil {
 		return fmt.Errorf("db.Query() failed: %v", err)
 	}
@@ -65,7 +67,7 @@ func insertObsForTS(db *sql.DB, tsObs *datastore.TSObservations) error {
 			field2 = EXCLUDED.field2
     `, strings.Join(valsExpr, ","))
 
-	_, err = db.Exec(cmd, vals...)
+	_, err = db.Exec(context.Background(), cmd, vals...)
 	if err != nil {
 		return fmt.Errorf("db.Exec() failed: %v", err)
 	}
