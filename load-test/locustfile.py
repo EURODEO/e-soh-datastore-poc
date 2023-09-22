@@ -1,15 +1,13 @@
-# Use the following command to generate the python protobuf stuff in the correct place (from the root of the repository)
-# python -m grpc_tools.protoc --proto_path=datastore/protobuf datastore.proto --python_out=load-test --grpc_python_out=load-test
-
+# Use the following command to generate the python protobuf stuff in the correct place (from the root of the repository)  # noqa: E501
+# python -m grpc_tools.protoc --proto_path=datastore/protobuf datastore.proto --python_out=load-test --grpc_python_out=load-test  # noqa: E501
 import random
 from datetime import datetime
 
-import grpc_user
 import datastore_pb2 as dstore
 import datastore_pb2_grpc as dstore_grpc
-from locust import task
-
+import grpc_user
 from google.protobuf.timestamp_pb2 import Timestamp
+from locust import task
 
 
 class StoreGrpcUser(grpc_user.GrpcUser):
@@ -18,16 +16,13 @@ class StoreGrpcUser(grpc_user.GrpcUser):
 
     @task
     def find_debilt_humidity(self):
-        ts_request = dstore.FindTSRequest(
-            station_ids=["06260"],
-            param_ids=["rh"]
-        )
+        ts_request = dstore.FindTSRequest(station_ids=["06260"], param_ids=["rh"])
         ts_response = self.stub.FindTimeSeries(ts_request)
         assert len(ts_response.tseries) == 1
 
     @task
     def get_data_random_timeserie(self):
-        ts_id = random.randint(1, 55*44)
+        ts_id = random.randint(1, 55 * 44)
 
         from_time = Timestamp()
         from_time.FromDatetime(datetime(2022, 12, 31))
@@ -40,4 +35,3 @@ class StoreGrpcUser(grpc_user.GrpcUser):
         )
         response = self.stub.GetObservations(request)
         assert len(response.tsobs[0].obs) == 144
-

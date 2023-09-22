@@ -13,8 +13,8 @@ import datastore_pb2_grpc as dstore_grpc
 import grpc
 import pandas as pd
 import xarray as xr
-from parameters import knmi_parameter_names
 from google.protobuf.timestamp_pb2 import Timestamp
+from parameters import knmi_parameter_names
 
 
 def netcdf_file_to_requests(file_path: Path | str) -> Tuple[List, List]:
@@ -22,21 +22,23 @@ def netcdf_file_to_requests(file_path: Path | str) -> Tuple[List, List]:
     observation_request_messages = []
     ts_id = 1
 
-    with xr.open_dataset(file_path, engine="netcdf4", chunks=None) as file:  # chunks=None to disable dask
+    with xr.open_dataset(
+        file_path, engine="netcdf4", chunks=None
+    ) as file:  # chunks=None to disable dask
         for param_id in knmi_parameter_names:
             ts_observations = []
 
             param_file = file[param_id]
             for station_id, latitude, longitude, height in zip(
-                file["station"].values, file["lat"].values[0], file["lon"].values[0], file["height"].values[0]
+                file["station"].values,
+                file["lat"].values[0],
+                file["lon"].values[0],
+                file["height"].values[0],
             ):
                 tsMData = dstore.TSMetadata(
                     station_id=station_id,
                     param_id=param_id,
-                    pos=dstore.Point(
-                        lat=latitude,
-                        lon=longitude
-                    ),
+                    pos=dstore.Point(lat=latitude, lon=longitude),
                     other1=param_file.name,
                     other2=param_file.long_name,
                     other3="value3",
@@ -60,7 +62,9 @@ def netcdf_file_to_requests(file_path: Path | str) -> Tuple[List, List]:
                         dstore.Observation(
                             time=ts,
                             value=obs_value,
-                            metadata=dstore.ObsMetadata(field1="KNMI", field2="Royal Dutch Meteorological Institute"),
+                            metadata=dstore.ObsMetadata(
+                                field1="KNMI", field2="Royal Dutch Meteorological Institute"
+                            ),
                         )
                     )
 
@@ -76,7 +80,9 @@ def netcdf_file_to_requests(file_path: Path | str) -> Tuple[List, List]:
 def insert_data(time_series_request_messages: List, observation_request_messages: List):
     workers = int(cpu_count())
 
-    with grpc.insecure_channel(f"{os.getenv('DSHOST', 'localhost')}:{os.getenv('DSPORT', '50050')}") as channel:
+    with grpc.insecure_channel(
+        f"{os.getenv('DSHOST', 'localhost')}:{os.getenv('DSPORT', '50050')}"
+    ) as channel:
         client = dstore_grpc.DatastoreStub(channel=channel)
 
         print(f"Inserting {len(time_series_request_messages)} time series requests.")
@@ -84,7 +90,7 @@ def insert_data(time_series_request_messages: List, observation_request_messages
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
             for _ in executor.map(client.AddTimeSeries, time_series_request_messages):
                 # Getting all values from the iterator ensures any exceptions are rethrown
-                # See https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.Executor.map
+                # See https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.Executor.map  # noqa: E501
                 pass
         print(f"Finished time series insert {perf_counter() - time_series_insert_start}.")
 
@@ -102,8 +108,13 @@ if __name__ == "__main__":
     print("Starting with creating the time series and observations requests.")
     create_requests_start = perf_counter()
     file_path = Path(Path(__file__).parents[2] / "test-data" / "KNMI" / "20221231.nc")
-    time_series_request_messages, observation_request_messages = netcdf_file_to_requests(file_path=file_path)
-    print(f"Finished creating the time series and observation requests {perf_counter() - create_requests_start}.")
+    time_series_request_messages, observation_request_messages = netcdf_file_to_requests(
+        file_path=file_path
+    )
+    print(
+        "Finished creating the time series and observation requests "
+        f"{perf_counter() - create_requests_start}."
+    )
 
     insert_data(
         time_series_request_messages=time_series_request_messages,

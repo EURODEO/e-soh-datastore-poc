@@ -1,45 +1,45 @@
 #!/usr/bin/env python3
 # tested with Python 3.11
-# Generate protobuf code with following command from top level directory:
-# python -m grpc_tools.protoc --proto_path=datastore/protobuf datastore.proto --python_out=examples/clients/python --grpc_python_out=examples/clients/python
+# Generate protobuf code with following command from top level directory:  # noqa: E501
+# python -m grpc_tools.protoc --proto_path=datastore/protobuf datastore.proto --python_out=examples/clients/python --grpc_python_out=examples/clients/python  # noqa: E501
 import os
 from datetime import datetime
-
-from google.protobuf.timestamp_pb2 import Timestamp
 
 import datastore_pb2 as dstore
 import datastore_pb2_grpc as dstore_grpc
 import grpc
+from google.protobuf.timestamp_pb2 import Timestamp
 
 MAGIC_ID = 1234567890
 MAGIC_VALUE = 123.456
 
+
 def callAddTimeSeries(stub):
-    print('calling AddTimeSeries() ...')
+    print("calling AddTimeSeries() ...")
     tsMData = dstore.TSMetadata(
-        station_id='18700',
-        param_id='211',
+        station_id="18700",
+        param_id="211",
         pos=dstore.Point(
             lat=59.91,
             lon=10.75,
         ),
-        other1='value1',
-        other2='value2',
-        other3='value3',
+        other1="value1",
+        other2="value2",
+        other3="value3",
     )
     request = dstore.AddTSRequest(
         id=MAGIC_ID,
         metadata=tsMData,
     )
     response = stub.AddTimeSeries(request)
-    print('    response: {}'.format(response))
+    print("    response: {}".format(response))
 
 
 def callPutObservations(stub):
-    print('calling PutObservations() ...')
+    print("calling PutObservations() ...")
     obsMData = dstore.ObsMetadata(
-        field1='value1',
-        field2='value2',
+        field1="value1",
+        field2="value2",
     )
     timestamp = Timestamp()
     timestamp.FromDatetime(datetime.now())
@@ -59,11 +59,11 @@ def callPutObservations(stub):
         ],
     )
     response = stub.PutObservations(request)
-    print('    response: {}'.format(response))
+    print("    response: {}".format(response))
 
 
 def callGetObservations(stub):
-    print('calling GetObservations() ...')
+    print("calling GetObservations() ...")
     from_time = Timestamp()
     from_time.FromDatetime(datetime(2023, 1, 1))
     to_time = Timestamp()
@@ -75,14 +75,15 @@ def callGetObservations(stub):
         totime=to_time,
     )
     response = stub.GetObservations(request)
-    print('    response: {}'.format(response))
+    print("    response: {}".format(response))
 
     return response
 
 
-if __name__ == '__main__':
-
-    with grpc.insecure_channel(f"{os.getenv('DSHOST', 'localhost')}:{os.getenv('DSPORT', '50050')}") as channel:
+if __name__ == "__main__":
+    with grpc.insecure_channel(
+        f"{os.getenv('DSHOST', 'localhost')}:{os.getenv('DSPORT', '50050')}"
+    ) as channel:
         stub = dstore_grpc.DatastoreStub(channel)
 
         callAddTimeSeries(stub)
@@ -94,6 +95,6 @@ if __name__ == '__main__':
     for r in response.tsobs:
         if r.tsid == MAGIC_ID:
             for o in r.obs:
-                assert(o.value == MAGIC_VALUE)
+                assert o.value == MAGIC_VALUE
                 found_at_least_one = True
     assert found_at_least_one
