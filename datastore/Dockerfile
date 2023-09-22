@@ -5,6 +5,7 @@
 # docker image rm -f main
 # ...
 
+# hadolint ignore=DL3007
 FROM golang:latest
 
 ARG VERSION_GRPC_HEALTH_PROBE=v0.4.19
@@ -14,6 +15,7 @@ SHELL ["/bin/bash", "-eux", "-o", "pipefail", "-c"]
 WORKDIR /app
 
 # install protoc
+# hadolint ignore=DL3008
 RUN apt-get update \
     && apt-get -y upgrade \
     && apt-get install -y --no-install-recommends \
