@@ -18,6 +18,7 @@ RUN apt-get update \
 COPY "${PROJECT_DATASTORE_PATH}/protobuf/datastore.proto" "/protobuf/datastore.proto"
 COPY "${PROJECT_PYTHON_PATH}/requirements.txt" "${DOCKER_PATH}/requirements.txt"
 
+# hadolint ignore=DL3013
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir --upgrade -r "${DOCKER_PATH}/requirements.txt"
 
