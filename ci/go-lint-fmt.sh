@@ -1,5 +1,10 @@
 #!/bin/bash
 
-set -euox pipefail
+set -euo pipefail
 
-files=$(gofmt -d -e -l -s .) && [ -z "$files" ]
+files=$(gofmt -d -e -l -s .)
+
+if [ -n "${files}" ]; then
+  echo "${files}"
+  exit 1
+fi
