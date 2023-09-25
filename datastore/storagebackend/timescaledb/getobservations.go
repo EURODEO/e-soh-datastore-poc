@@ -72,5 +72,5 @@ func (sbe *TimescaleDB) GetObservations(request *datastore.GetObsRequest) (
 		}
 	}
 
-	return &datastore.GetObsResponse{Tsobs:        tsObs}, nil
+	return &datastore.GetObsResponse{Tsobs: tsObs}, nil
 }
