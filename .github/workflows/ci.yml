@@ -22,13 +22,22 @@ jobs:
         with:
           recursive: true
 
-  go-lint-fmt:
+  go-fmt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
       - name: Run gofmt
-        run: ./ci/go-lint-fmt.sh
+        run: ./ci/go/go-fmt.sh
+        shell: bash
+
+  go-vet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run gofmt
+        run: ./ci/go/go-vet.sh
         shell: bash
 
   python-lint-black:

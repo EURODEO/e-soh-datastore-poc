@@ -2,10 +2,10 @@
 
 set -euo pipefail
 
-files=$(gofmt -d -e -l -s .)
+output=$(gofmt -d -e -l -s .)
 
-if [ -n "${files}" ]; then
-  echo "${files}"
+if [ -n "${output}" ]; then
+  echo "${output}"
   exit 1
 else
   echo "All files are in the proper format."
