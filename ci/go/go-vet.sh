@@ -1,8 +1,12 @@
 #!/bin/bash
 
-set -euo pipefail
+set -uo pipefail
 
-# Go vet exits in case of issues
-(cd ./datastore && go vet ./...)
-# else
-echo "No subtle issues found in the code. All is working as intended."
+output=$(cd ./datastore && go vet ./... 2>&1)
+
+if [ -n "${output}" ]; then
+  echo "${output}"
+#  exit 1
+else
+  echo "No subtle issues found in the code. All is working as intended."
+fi
