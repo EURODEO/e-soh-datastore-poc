@@ -14,7 +14,9 @@ NUMBER_OF_PARAMETERS = 44
 
 @pytest.fixture(scope="session")
 def grpc_stub():
-    with grpc.insecure_channel(f"{os.getenv('DSHOST', 'localhost')}:{os.getenv('DSPORT', '50050')}") as channel:
+    with grpc.insecure_channel(
+        f"{os.getenv('DSHOST', 'localhost')}:{os.getenv('DSPORT', '50050')}"
+    ) as channel:
         yield dstore_grpc.DatastoreStub(channel)
 
 
@@ -105,14 +107,23 @@ input_params_polygon = [
         ["06260"],
     ),
     (
-        # Middle bottom, should fall outside since polygon is curved because the earth is round (postgres geography).
+        # Middle bottom, should fall outside since polygon is curved
+        # because the earth is round (postgres geography).
         ((52.1, 4.17), (52.1, 6.18), (52.0989, 6.18), (52.0989, 4.17)),
         None,
         [],
     ),
     (
         # Complex polygon
-        ((51.45, 3.47), (51.39, 3.67), (51.39, 4.28), (51.52, 4.96), (51.89, 5.46), (52.18, 5.30), (51.75, 3.68)),
+        (
+            (51.45, 3.47),
+            (51.39, 3.67),
+            (51.39, 4.28),
+            (51.52, 4.96),
+            (51.89, 5.46),
+            (52.18, 5.30),
+            (51.75, 3.68),
+        ),
         None,
         ["06260", "06310", "06323", "06340", "06343", "06348", "06350", "06356"],
     ),
@@ -122,11 +133,12 @@ input_params_polygon = [
         None,
         # fmt: off
         [
-            "06201", "06203", "06204", "06205", "06207", "06208", "06211", "06214", "06215", "06225", "06229",
-            "06235", "06239", "06240", "06242", "06248", "06249", "06251", "06252", "06257", "06258", "06260",
-            "06267", "06269", "06270", "06273", "06275", "06277", "06278", "06279", "06280", "06283", "06286",
-            "06290", "06310", "06317", "06319", "06320", "06321", "06323", "06330", "06340", "06343", "06344",
-            "06348", "06350", "06356", "06370", "06375", "06377", "06380", "06391"
+            "06201", "06203", "06204", "06205", "06207", "06208", "06211", "06214", "06215",
+            "06225", "06229", "06235", "06239", "06240", "06242", "06248", "06249", "06251",
+            "06252", "06257", "06258", "06260", "06267", "06269", "06270", "06273", "06275",
+            "06277", "06278", "06279", "06280", "06283", "06286", "06290", "06310", "06317",
+            "06319", "06320", "06321", "06323", "06330", "06340", "06343", "06344", "06348",
+            "06350", "06356", "06370", "06375", "06377", "06380", "06391",
         ],
         # fmt: on
     ),
@@ -136,7 +148,8 @@ input_params_polygon = [
 @pytest.mark.parametrize("coords,param_ids,expected_station_ids", input_params_polygon)
 def test_get_observations_with_polygon(grpc_stub, coords, param_ids, expected_station_ids):
     ts_request = dstore.FindTSRequest(
-        inside=dstore.Polygon(points=[dstore.Point(lat=lat, lon=lon) for lat, lon in coords]), param_ids=param_ids
+        inside=dstore.Polygon(points=[dstore.Point(lat=lat, lon=lon) for lat, lon in coords]),
+        param_ids=param_ids,
     )
     ts_response = grpc_stub.FindTimeSeries(ts_request)
 
