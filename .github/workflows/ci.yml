@@ -7,8 +7,8 @@ on:
     tags:
       - '[0-9]+.[0-9]+.[0-9]+'
 
-# TODO: go linting: https://sparkbox.com/foundry/go_vet_gofmt_golint_to_code_check_in_Go
-# TODO:  https://github.com/search?q=gofmt+language%3AYAML+path%3A.github%2Fworkflows&type=code
+permissions:
+  contents: read
 
 env:
   LINE_LENGTH: 99  # TODO: would we like to increase this to 120?
