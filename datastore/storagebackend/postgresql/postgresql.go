@@ -173,9 +173,30 @@ func cleanup(db *sql.DB) error {
 		return fmt.Errorf("tx.Exec() failed: %v", err)
 	}
 
-	// DELETE FROM time_series WHERE <no FK refs from observation anymore> ... TODO!
-	// DELETE FROM geo_points WHERE <no FK refs from observation anymore> ... TODO!
-
+	// DELETE FROM time_series WHERE <no FK refs from observation anymore
+	cmd = fmt.Sprintf(`
+		DELETE FROM time_series
+		WHERE NOT EXISTS (
+			SELECT 1
+			FROM observation
+			WHERE observation.ts_id = time_series.id)
+	`)
+	_, err = tx.Exec(cmd)
+	if err != nil {
+		return fmt.Errorf("tx.Exec() failed: %v", err)
+	}
+	// DELETE FROM geo_points WHERE <no FK refs from observation anymore
+	cmd = fmt.Sprintf(`
+		DELETE FROM geo_point
+		WHERE NOT EXISTS (
+			SELECT 1
+			FROM observation
+			WHERE observation.geo_point_id = geo_point.id)
+	`)
+	_, err = tx.Exec(cmd)
+	if err != nil {
+		return fmt.Errorf("tx.Exec() failed: %v", err)
+	}
 	// commit transaction
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("tx.Commit() failed: %v", err)
