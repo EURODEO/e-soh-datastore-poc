@@ -20,7 +20,7 @@ var (
 // initCleanupInterval initializes cleanupInterval.
 func initCleanupInterval() {
 	name := "CLEANUPINTERVAL"
-	defaultVal := int64(86400)
+	defaultVal := int64(10)
 	val0 := strings.ToLower(common.Getenv(name, fmt.Sprintf("%d", defaultVal)))
 
 	val, err := strconv.ParseInt(val0, 10, 64)
