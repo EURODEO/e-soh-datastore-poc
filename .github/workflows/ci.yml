@@ -60,8 +60,7 @@ jobs:
           python --version
           pip install -r datastore/load-test/requirements.txt
           python -m grpc_tools.protoc --proto_path=datastore/datastore/protobuf datastore.proto --python_out=datastore/load-test --grpc_python_out=datastore/load-test
-          cd datastore/load-test
-          locust --headless -u 5 -r 1 --run-time 60 --only-summary --csv store
+          locust -f datastore/load-test/locustfile_write.py,datastore/load-test/locustfile_read.py --headless -u 5 -r 1 --run-time 300 --only-summary --csv datastore/load-test/store
 
       - name: Archive load test artifacts
         uses: actions/upload-artifact@v3
