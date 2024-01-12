@@ -32,7 +32,7 @@ crons = [
     (5, "2-59/5"),
     (5, "3-59/5"),
     (5, "4-59/5"),
-    (10, "*/10"),  # every 5 minutes, on the five
+    (10, "*/10"),  # every 10 minutes, on the 10
     (10, "1-59/10"),  # every 10 minutes, on minute after the five
     (10, "2-59/10"),
     (10, "3-59/10"),
@@ -43,8 +43,6 @@ crons = [
     (10, "8-59/10"),
     (10, "9-59/10"),
 ]
-
-# count = 0
 
 vars_per_station = 40  # Should be <=44
 
